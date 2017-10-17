@@ -2,7 +2,7 @@ package main
 
 import (
 	"strconv"
-
+	"net/http"
 	"github.com/labstack/echo"
 	"fmt"
 )
@@ -32,7 +32,7 @@ var (
 	counter   []int
 	soldList  []string
 	recentId  int
-	orderdId  int
+	orderId   int
 	csv       string
 	emptySold bool
 
@@ -47,6 +47,57 @@ func itoa(a int) string {
 func atoi(a string) int {
 	b, _ := strconv.Atoi(a)
 	return b
+}
+
+
+func initDB() {
+	orderId = 0
+
+	artist = []Artist{
+
+		Artist{artistName: "NHN48",
+			ticketNames: []string{"西武ドームライブ", "東京ドームライブ"},
+			ticketIds:   []int{1, 2},
+		},
+
+		Artist{artistName: "はだいろクローバーZ",
+			ticketNames: []string{"さいたまスーパーアリーナライブ", "横浜アリーナライブ", "西武ドームライブ"},
+			ticketIds:   []int{3, 4, 5},
+		},
+	}
+	ticket = []Ticket{
+
+		Ticket{artistName: "NHN48",
+			ticketName:     "西武ドームライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{1, 2},
+		},
+
+		Ticket{artistName: "NHN48",
+			ticketName:     "東京ドームライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{3, 4},
+		},
+
+		Ticket{artistName: "はだいろクローバーZ",
+			ticketName:     "さいたまスーパーアリーナライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{5, 6},
+		},
+
+		Ticket{artistName: "はだいろクローバーZ",
+			ticketName:     "横浜アリーナライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{7, 8},
+		},
+
+		Ticket{artistName: "はだいろクローバーZ",
+			ticketName:     "西武ドームライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{9, 10},
+		},
+	}
+
 }
 
 func get_recent_sold() string {
@@ -113,15 +164,15 @@ func GenCompleteHTML(r *Render) string {
 
 func getArtistList() string {
 	ret := ""
-	for i := 0; i <= len(artist); i++ {
-		ret += fmt.Sprint(`<li><span class="artist_name">%s</span></li>`,artist[i].artistName)
+	for i := 0; i < len(artist); i++ {
+		ret += fmt.Sprintf(`<li><span class="artist_name">%s</span></li>`,artist[i].artistName)
 	}
 	return ret
 }
 
 func GenIndexHTML(r *Render) string {
 	artlist := getArtistList()
-	return fmt.Sprint(`<h1>TOP</h1><ul>%s</ul>`, artlist)
+	return fmt.Sprintf(`<h1>TOP</h1><ul>%s</ul>`, artlist)
 }
 
 func GenSoldOutHTML(r *Render) string {
@@ -159,19 +210,24 @@ func GenHTML(content_name string, r *Render) string {
 }
 
 func main() {
+	initDB()
 	e := echo.New()
 
 	e.GET("/", func(c echo.Context) error {
-		return nil
+		r := &Render{}
+		return c.HTML(http.StatusOK, GenHTML("index", r));
 	})
 
-	e.GET("/artist/<int:artist_id>", func(c echo.Context) error {
-
-		return nil
+	e.GET("/artist/:artist_id", func(c echo.Context) error {
+		r := &Render{}
+		r.artistId = atoi(c.Param("artist_id"))
+		return c.HTML(http.StatusOK, GenHTML("artist", r));
 	})
 
-	e.GET("/ticket/<int:ticket_id>", func(c echo.Context) error {
-		return nil
+	e.GET("/ticket/:ticket_id", func(c echo.Context) error {
+		r := &Render{}
+		r.ticketId = atoi(c.Param("ticket_id"))
+		return c.HTML(http.StatusOK, GenHTML("ticket", r));
 	})
 
 	e.POST("/buy", func(c echo.Context) error {
@@ -185,11 +241,13 @@ func main() {
 	})
 
 	e.GET("admin", func(c echo.Context) error {
-		return nil
+		r := &Render{}
+		return c.HTML(http.StatusOK, GenHTML("admin", r));
 	})
 
 	e.GET("/admin/order.csv", func(c echo.Context) error {
-		return nil
+		// content-type: text/csv?
+		return c.String(http.StatusOK, csv);
 	})
 
 	e.Logger.Fatal(e.Start(":5000"))
