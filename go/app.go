@@ -360,7 +360,6 @@ func main() {
 		}
 		counter[r.variationId]++
 		ctr := counter[r.variationId]
-		mutex.Unlock()
 
 		r.seatId = fmt.Sprint("%02d-%02d", ctr/64, ctr%64)
 
@@ -370,7 +369,7 @@ func main() {
 		csv += fmt.Sprint("%d,%s,%s,%s\n",
 			orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("%Y-%m-%d %X"))
 
-
+		mutex.Unlock()
 		return c.String(http.StatusOK, GenHTML(completeHTML, r))
 	})
 
