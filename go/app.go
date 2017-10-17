@@ -73,12 +73,18 @@ func push(s string) {
 	recentId++
 }
 
-func initDB() {
+func initilaize() {
 	orderId = 0
 	recentId = 0
+	for i := 0; i < len(variation); i++ {
+		counter[i] = 0
+	}
+}
 
-	counter = make([]int, 114514)
+func initDB() {
+	counter = make([]int, 114)
 	soldList = make([]string, 114514)
+	initilaize()
 
 	artist = []Artist{
 
@@ -180,11 +186,11 @@ func initDB() {
 
 func get_recent_sold() string {
 	ret := ""
-	n := orderId - 10
+	n := recentId - 10
 	if n < 0 {
 		n = 0
 	}
-	recent_sold := soldList[n:]
+	recent_sold := soldList[n:orderId]
 	for _, s := range recent_sold {
 		ret += "<tr><td class=\"recent_variation\">"
 		ret += s
@@ -375,6 +381,7 @@ func main() {
 	})
 
 	e.POST("/admin", func(c echo.Context) error {
+		initilaize()
 		return c.Redirect(302, "/admin")
 	})
 
