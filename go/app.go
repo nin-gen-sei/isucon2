@@ -133,30 +133,28 @@ func GenTicketHTML(r *Render) string {
 }
 
 func GenHTML(content_name string, r *Render) string {
-	res := ` <!DOCTYPE html> <html> <head>	<title>isucon 2</title>	<meta charset="utf-8">	<link type="text/css" rel="stylesheet" href="/css/ui-lightness/jquery-ui-1.8.24.custom.css">	<link type="text/css" rel="stylesheet" href="/css/isucon2.css">	<script type="text/javascript" src="/js/jquery-1.8.2.min.js"></script>	<type="text/javascript" src="/js/jquery-ui-1.8.24.custom.min.js"></script>	<script type="text/javascript" src="/js/isucon2.js"></script>	</head>	<body>	<header>	<a href="/">	<img src="/images/isucon_title.jpg">	</a>	</header>	<div id="sidebar">`
+	res := `<!DOCTYPE html> <html> <head>	<title>isucon 2</title>	<meta charset="utf-8">	<link type="text/css" rel="stylesheet" href="/css/ui-lightness/jquery-ui-1.8.24.custom.css">	<link type="text/css" rel="stylesheet" href="/css/isucon2.css">	<script type="text/javascript" src="/js/jquery-1.8.2.min.js"></script>	<type="text/javascript" src="/js/jquery-ui-1.8.24.custom.min.js"></script>	<script type="text/javascript" src="/js/isucon2.js"></script>	</head>	<body>	<header>	<a href="/">	<img src="/images/isucon_title.jpg">	</a>	</header>	<div id="sidebar">`
 	if !emptySold {
-		res += `<table>
-	<tr><th colspan="2">最近購入されたチケット</th></tr>`
+		res += `<table><tr><th colspan="2">最近購入されたチケット</th></tr>`
 		res += get_recent_sold()
 		res += `</table>`
 	}
-	res += `
-	</div>
-	<div id="content">
-	`
+	res += `</div><div id="content">`
 	switch content_name {
 	case "admin":
+		res += GenAdminHTML(r)
 	case "artist":
+		res += GenArtistHTML(r)
 	case "complete":
+		res += GenCompleteHTML(r)
 	case "index":
+		res += GenIndexHTML(r)
 	case "soldout":
+		res += GenSoldOutHTML(r)
 	case "ticket":
+		res += GenTicketHTML(r)
 	}
-	res += `
-	</div>
-	</body>
-	</html>
-	`
+	res += `</div></body></html>`
 	return res
 }
 
