@@ -44,7 +44,7 @@ var (
 	soldList []string
 	recentId int
 	orderId  int
-	csv      string
+	csv      *bytes.Buffer
 
 	artist    []Artist    // artist[artist_id] = Artist
 	ticket    []Ticket    // ticket[ticket_id] = Ticket
@@ -81,6 +81,7 @@ func initilaize() {
 	for i := 0; i <= len(variation); i++ {
 		counter[i] = 0
 	}
+	csv = bytes.NewBuffer(make([]byte, 0, 114514))
 	mutex.Unlock()
 }
 
@@ -381,8 +382,8 @@ func main() {
 		push(fmt.Sprintf("%s %s %s</td>\n<td class=\"recent_seat_id\">%s",
 			variation[r.variationId-1].artistName, variation[r.variationId-1].ticketName, variation[r.variationId-1].variationName, r.seatId))
 
-		csv += fmt.Sprintf("%d,%s,%s,%d,%s\n",
-			orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("2006-01-02 15:04:05"))
+		csv.WriteString(fmt.Sprintf("%d,%s,%s,%d,%s\n",
+			orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("2006-01-02 15:04:05")))
 		//orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("%Y-%m-%d %X"))
 
 		mutex.Unlock()
@@ -399,8 +400,8 @@ func main() {
 	})
 
 	e.GET("/admin/order.csv", func(c echo.Context) error {
-		return c.String(http.StatusOK, csv)
+		return c.String(http.StatusOK, csv.String())
 	})
 
-	e.Logger.Fatal(e.Start(":5000"))
+	e.Start(":5000")
 }
