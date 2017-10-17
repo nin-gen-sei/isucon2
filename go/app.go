@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 
+	"fmt"
 	"github.com/labstack/echo"
 )
 
@@ -20,6 +20,14 @@ type Ticket struct {
 	variationIds   []int
 }
 
+type Render struct {
+	artistId    int
+	ticketId    int
+	variationId int
+	memberId    int
+	seatId      int
+}
+
 var (
 	counter   []int
 	soldList  []string
@@ -28,11 +36,9 @@ var (
 	csv       string
 	emptySold bool
 
-	inArtistId int
-	inTicketId int
-
 	artist []Artist // artist[artist_id] = Artist
 	ticket []Ticket // ticket[ticket_id] = Ticket
+
 )
 
 func itoa(a int) string {
@@ -60,7 +66,7 @@ func get_recent_sold() string {
 	return ret
 }
 
-func GenAdminHTML() string {
+func GenAdminHTML(r *Render) string {
 	ret := `
 	<ul>
 	<li>
@@ -76,41 +82,52 @@ func GenAdminHTML() string {
 	return ret
 }
 
-func GenArtistHTML() string {
+func GenArtistHTML(r *Render) string {
 	ret := `<h2>`
-	ret += artist[inArtistId].artistName
+	ret += artist[r.artistId].artistName
 	ret += `</h2>`
 	ret += `<ul>`
 	for i := 0; i < len(ticket); i++ {
 		ret += `<li class="ticket">`
 		ret += `<a href="/ticket/`
-		ret += itoa(artist[inArtistId].ticketIds[i])
+		ret += itoa(artist[r.artistId].ticketIds[i])
 		ret += `">`
-		ret += artist[inArtistId].ticketNames[i]
+		ret += artist[r.artistId].ticketNames[i]
 		ret += `</a>残り<span class="count">`
-		ret += itoa(counter[artist[inArtistId].ticketIds[i]])
+		ret += itoa(counter[artist[r.artistId].ticketIds[i]])
 		ret += `</span>枚`
 	}
 	ret += `</li>`
 	return ret
 }
 
-func GenCompleteHTML() string {
-	return ""
+func GenCompleteHTML(r *Render) string {
+	ret := `<h2>予約完了</h2>`
+	ret += `会員ID:<span class="member_id">`
+	ret += itoa(r.memberId)
+	ret += `</span>で<span class="result" data-result="success">&quot;<span class="seat">`
+	ret += itoa(r.seatId)
+	ret += `</span>&quot;の席を購入しました。</span>`
+	return ret
 }
 
-func GenIndexHTML() string {
-	return ""
+func getArtistList() string {
+	ret := ""
+	for i := 0; i <= len(artist); i++ {
+		ret += fmt.Sprint(`<li><span class="artist_name">%s</span></li>`, artist[i].artistName)
+	}
+	return ret
 }
 
-func GenSoldOutHTML() string {
-	return ""
+func GenIndexHTML(r *Render) string {
+	artlist := getArtistList()
+	return fmt.Sprint(`<h1>TOP</h1><ul>%s</ul>`, artlist)
 }
 
-func GenTicketHTML() string {
-	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[inTicketId].artistName, ticket[inTicketId].ticketName)
+func GenTicketHTML(r *Render) string {
+	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId].artistName, ticket[r.ticketId].ticketName)
 
-	for _, v := range ticket[inTicketId].variationIds {
+	for _, v := range ticket[r.ticketId].variationIds {
 
 		ret += fmt.Sprintf(`
 	  <li class="variation">
@@ -122,13 +139,13 @@ func GenTicketHTML() string {
 	  <input type="submit" value="購入">
 	  </form>
 	  </li>
-	`, inTicketId, v, ticket[inTicketId].variationNames[v], v, 4096-counter[v])
+	`, r.ticketId, v, ticket[r.ticketId].variationNames[v], v, 4096-counter[v])
 
 	}
 	ret += `</ul><h3>席状況</h3>`
 
-	for _, v := range ticket[inTicketId].variationIds {
-		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[inTicketId].variationNames[v], v)
+	for _, v := range ticket[r.ticketId].variationIds {
+		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId].variationNames[v], v)
 
 		for row := 0; row < 64; row++ {
 			ret += `<tr>`
@@ -147,31 +164,34 @@ func GenTicketHTML() string {
 	return ret
 }
 
-func GenHTML(content_name string) string {
-	res := ` <!DOCTYPE html> <html> <head>	<title>isucon 2</title>	<meta charset="utf-8">	<link type="text/css" rel="stylesheet" href="/css/ui-lightness/jquery-ui-1.8.24.custom.css">	<link type="text/css" rel="stylesheet" href="/css/isucon2.css">	<script type="text/javascript" src="/js/jquery-1.8.2.min.js"></script>	<type="text/javascript" src="/js/jquery-ui-1.8.24.custom.min.js"></script>	<script type="text/javascript" src="/js/isucon2.js"></script>	</head>	<body>	<header>	<a href="/">	<img src="/images/isucon_title.jpg">	</a>	</header>	<div id="sidebar">`
+func GenSoldOutHTML(r *Render) string {
+	return `<span class="result" data-result="failure">売り切れました。</span>`
+
+}
+
+func GenHTML(content_name string, r *Render) string {
+	res := `<!DOCTYPE html> <html> <head>	<title>isucon 2</title>	<meta charset="utf-8">	<link type="text/css" rel="stylesheet" href="/css/ui-lightness/jquery-ui-1.8.24.custom.css">	<link type="text/css" rel="stylesheet" href="/css/isucon2.css">	<script type="text/javascript" src="/js/jquery-1.8.2.min.js"></script>	<type="text/javascript" src="/js/jquery-ui-1.8.24.custom.min.js"></script>	<script type="text/javascript" src="/js/isucon2.js"></script>	</head>	<body>	<header>	<a href="/">	<img src="/images/isucon_title.jpg">	</a>	</header>	<div id="sidebar">`
 	if !emptySold {
-		res += `<table>
-	<tr><th colspan="2">最近購入されたチケット</th></tr>`
+		res += `<table><tr><th colspan="2">最近購入されたチケット</th></tr>`
 		res += get_recent_sold()
 		res += `</table>`
 	}
-	res += `
-	</div>
-	<div id="content">
-	`
+	res += `</div><div id="content">`
 	switch content_name {
 	case "admin":
+		res += GenAdminHTML(r)
 	case "artist":
+		res += GenArtistHTML(r)
 	case "complete":
+		res += GenCompleteHTML(r)
 	case "index":
+		res += GenIndexHTML(r)
 	case "soldout":
+		res += GenSoldOutHTML(r)
 	case "ticket":
+		res += GenTicketHTML(r)
 	}
-	res += `
-	</div>
-	</body>
-	</html>
-	`
+	res += `</div></body></html>`
 	return res
 }
 
@@ -192,8 +212,9 @@ func main() {
 	})
 
 	e.POST("/buy", func(c echo.Context) error {
-		variation_id := atoi(c.Param("artist_id"))
-		member_id := atoi(c.Param("member_id"))
+		r := Render{}
+		r.variationId = atoi(c.Param("artist_id"))
+		r.memberId = atoi(c.Param("member_id"))
 
 		// 更新処理
 
