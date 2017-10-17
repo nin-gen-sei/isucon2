@@ -26,7 +26,7 @@ type Render struct {
 	artistId    int
 	ticketId    int
 	variationId int
-	memberId    int
+	memberId    string
 	seatId      string
 }
 
@@ -180,7 +180,7 @@ func get_recent_sold() string {
 	if n < 0 {
 		n = 0
 	}
-	recent_sold := soldList[n:]
+	recent_sold := soldList[n:orderId]
 	for _, s := range recent_sold {
 		ret += "<tr><td class=\"recent_variation\">"
 		ret += s
@@ -218,7 +218,7 @@ func GenArtistHTML(r *Render) string {
 		ret += `">`
 		ret += artist[r.artistId-1].ticketNames[i]
 		ret += `</a>残り<span class="count">`
-		ret += itoa(4096*2 - (counter[id*2-1-1] + counter[id*2-1]))
+		ret += itoa(4096*2 - (counter[id*2-1] + counter[id*2]))
 		ret += `</span>枚`
 	}
 	ret += `</li>`
@@ -228,7 +228,7 @@ func GenArtistHTML(r *Render) string {
 func GenCompleteHTML(r *Render) string {
 	ret := `<h2>予約完了</h2>`
 	ret += `会員ID:<span class="member_id">`
-	ret += itoa(r.memberId)
+	ret += r.memberId
 	ret += `</span>で<span class="result" data-result="success">&quot;<span class="seat">`
 	ret += r.seatId
 	ret += `</span>&quot;の席を購入しました。</span>`
@@ -249,9 +249,9 @@ func GenIndexHTML(r *Render) string {
 }
 
 func GenTicketHTML(r *Render) string {
-	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId].artistName, ticket[r.ticketId].ticketName)
+	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId-1].artistName, ticket[r.ticketId-1].ticketName)
 
-	for i, v := range ticket[r.ticketId].variationIds {
+	for i, v := range ticket[r.ticketId-1].variationIds {
 
 		ret += fmt.Sprintf(`
 	  <li class="variation">
@@ -263,13 +263,13 @@ func GenTicketHTML(r *Render) string {
 	  <input type="submit" value="購入">
 	  </form>
 	  </li>
-	`, r.ticketId, v, ticket[r.ticketId].variationNames[i], v, 4096-counter[v])
+	`, r.ticketId, v, ticket[r.ticketId-1].variationNames[i], v, 4096-counter[v])
 
 	}
 	ret += `</ul><h3>席状況</h3>`
 
-	for i, v := range ticket[r.ticketId].variationIds {
-		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId].variationNames[i], v)
+	for i, v := range ticket[r.ticketId-1].variationIds {
+		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId-1].variationNames[i], v)
 
 		for row := 0; row < 64; row++ {
 			ret += `<tr>`
@@ -344,23 +344,24 @@ func main() {
 
 	e.POST("/buy", func(c echo.Context) error {
 		r := &Render{
-			variationId: atoi(c.Param("variation_id")),
-			memberId:    atoi(c.Param("member_id")),
+			variationId: atoi(c.FormValue("variation_id")),
+			memberId:    c.FormValue("member_id"),
 		}
 
 		orderId++
 		if counter[r.variationId] == 4096 {
 			return c.HTML(http.StatusOK, GenHTML(soldOutHTML, r))
 		}
-		counter[r.variationId]++
 		ctr := counter[r.variationId]
+		counter[r.variationId]++
 		r.seatId = fmt.Sprintf("%02d-%02d", ctr/64, ctr%64)
 
 		push(fmt.Sprintf("%s %s %s</td>\n<td class=\"recent_seat_id\">%s",
-			variation[r.variationId].artistName, variation[r.variationId].ticketName, variation[r.variationId].variationName, r.seatId))
+			variation[r.variationId-1].artistName, variation[r.variationId-1].ticketName, variation[r.variationId-1].variationName, r.seatId))
 
-		csv += fmt.Sprintf("%d,%s,%s,%s\n",
-			orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("%Y-%m-%d %X"))
+		csv += fmt.Sprintf("%d,%s,%s,%d,%s\n",
+    orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("2006-01-02 15:04:05"))
+			//orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("%Y-%m-%d %X"))
 
 		return c.HTML(http.StatusOK, GenHTML(completeHTML, r))
 	})
