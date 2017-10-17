@@ -71,6 +71,10 @@ func push(s string) {
 
 func initDB() {
 	orderId = 0
+	recentId = 0
+
+	counter = make([]int, 114514)
+	soldList = make([]string, 114514)
 
 	artist = []Artist{
 
@@ -117,11 +121,62 @@ func initDB() {
 		},
 	}
 
+	variation = []Variation{
+		Variation{artistName: "NHN48",
+			ticketName:    "西武ドームライブ",
+			variationName: "アリーナ席",
+		},
+
+		Variation{artistName: "NHN48",
+			ticketName:    "西武ドームライブ",
+			variationName: "スタンド席",
+		},
+
+		Variation{artistName: "NHN48",
+			ticketName:    "東京ドームライブ",
+			variationName: "アリーナ席",
+		},
+
+		Variation{artistName: "NHN48",
+			ticketName:    "東京ドームライブ",
+			variationName: "スタンド席",
+		},
+
+		Variation{artistName: "はだいろクローバーZ",
+			ticketName:    "さいたまスーパーアリーナライブ",
+			variationName: "アリーナ席",
+		},
+
+		Variation{artistName: "はだいろクローバーZ",
+			ticketName:    "さいたまスーパーアリーナライブ",
+			variationName: "スタンド席",
+		},
+
+		Variation{artistName: "はだいろクローバーZ",
+			ticketName:    "横浜アリーナライブ",
+			variationName: "アリーナ席",
+		},
+
+		Variation{artistName: "はだいろクローバーZ",
+			ticketName:    "横浜アリーナライブ",
+			variationName: "スタンド席",
+		},
+
+		Variation{artistName: "はだいろクローバーZ",
+			ticketName:    "西武ドームライブ",
+			variationName: "アリーナ席",
+		},
+
+		Variation{artistName: "はだいろクローバーZ",
+			ticketName:    "西武ドームライブ",
+			variationName: "スタンド席",
+		},
+	}
 }
 
 func get_recent_sold() string {
 	ret := ""
-	n := recentId - 10
+	n := orderId - 10
 	if n < 0 {
 		n = 0
 	}
