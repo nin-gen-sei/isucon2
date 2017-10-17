@@ -189,18 +189,16 @@ func initDB() {
 }
 
 func get_recent_sold() string {
-	ret := ""
+	ret := bytes.NewBuffer(make([]byte, 0, 1024))
 	n := recentId - 10
 	if n < 0 {
 		n = 0
 	}
 
 	for i := orderId - 1; i >= n; i-- {
-		ret += "<tr><td class=\"recent_variation\">"
-		ret += soldList[i]
-		ret += "</td>\n</tr>"
+		ret.WriteString(fmt.Sprintf("<tr><td class=\"recent_variation\">%s</td>\n</tr>", soldList[i]))
 	}
-	return ret
+	return ret.String()
 }
 
 func GenAdminHTML(r *Render) string {
@@ -220,58 +218,46 @@ func GenAdminHTML(r *Render) string {
 }
 
 func GenArtistHTML(r *Render) string {
-	ret := `<h2>`
-	ret += artist[r.artistId-1].artistName
-	ret += `</h2>`
-	ret += `<ul>`
+	ret := bytes.NewBuffer(make([]byte, 0, 1024))
+	ret.WriteString(fmt.Sprintf(`<h2>%s</h2><ul>`, artist[r.artistId-1].artistName))
+
 	for i := 0; i < len(artist[r.artistId-1].ticketIds); i++ {
 		id := artist[r.artistId-1].ticketIds[i]
-		ret += `<li class="ticket">`
-		ret += `<a href="/ticket/`
-		ret += itoa(id)
-		ret += `">`
-		ret += artist[r.artistId-1].ticketNames[i]
-		ret += `</a>残り<span class="count">`
-		ret += itoa(4096*2 - (counter[id*2-1] + counter[id*2]))
-		ret += `</span>枚`
+		ret.WriteString(fmt.Sprintf(`<li class="ticket"><a href="/ticket/%d">%s</a>残り<span class="count">%d</span>枚</li>`,
+			id, artist[r.artistId-1].ticketNames[i], 4096*2-(counter[id*2-1]+counter[id*2])))
 	}
-	ret += `</li>`
-	return ret
+	return ret.String()
 }
 
 func GenCompleteHTML(r *Render) string {
-	ret := `<h2>予約完了</h2>`
-	ret += `会員ID:<span class="member_id">`
-	ret += r.memberId
-	ret += `</span>で<span class="result" data-result="success">&quot;<span class="seat">`
-	ret += r.seatId
-	ret += `</span>&quot;の席を購入しました。</span>`
-	return ret
+	ret := bytes.NewBuffer(make([]byte, 0, 512))
+	ret.WriteString(fmt.Sprintf(`<h2>予約完了</h2>会員ID:<span class="member_id">%s</span>で<span class="result" data-result="success">&quot;<span class="seat">%s</span>&quot;の席を購入しました。</span>`,
+		r.memberId, r.seatId))
+	return ret.String()
 }
 
 func getArtistList() string {
-	ret := ""
+	ret := bytes.NewBuffer(make([]byte, 0, 512))
 	for i, art := range artist {
-		ret += fmt.Sprintf(`<li><a href="/artist/%d"><span class="artist_name">%s</span></a></li>`, i+1, art.artistName)
+		ret.WriteString(fmt.Sprintf(`<li><a href="/artist/%d"><span class="artist_name">%s</span></a></li>`, i+1, art.artistName))
 	}
-	return ret
+	return ret.String()
 }
 
 func GenIndexHTML(r *Render) string {
-	artlist := getArtistList()
-	return fmt.Sprintf(`<h1>TOP</h1><ul>%s</ul>`, artlist)
+	return fmt.Sprintf(`<h1>TOP</h1><ul>%s</ul>`, getArtistList())
 }
 
 func GenTicketHTML(r *Render) string {
 
-	ret := ""
+	ret := bytes.NewBuffer(make([]byte, 0, 114514))
 	if 0 < r.ticketId && r.ticketId <= len(ticket) {
 
-		ret = fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId-1].artistName, ticket[r.ticketId-1].ticketName)
+		ret.WriteString(fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId-1].artistName, ticket[r.ticketId-1].ticketName))
 
 		for i, v := range ticket[r.ticketId-1].variationIds {
 
-			ret += fmt.Sprintf(`
+			ret.WriteString(fmt.Sprintf(`
 	  <li class="variation">
 	  <form method="POST" action="/buy">
 	  <input type="hidden" name="ticket_id" value="%d">
@@ -281,34 +267,32 @@ func GenTicketHTML(r *Render) string {
 	  <input type="submit" value="購入">
 	  </form>
 	  </li>
-	`, r.ticketId, v, ticket[r.ticketId-1].variationNames[i], v, 4096-counter[v])
+	`, r.ticketId, v, ticket[r.ticketId-1].variationNames[i], v, 4096-counter[v]))
 
 		}
 	}
 
-	ret += `</ul><h3>席状況</h3>`
-
-	var m2 = bytes.NewBuffer(make([]byte, 0, 114514))
+	ret.WriteString(`</ul><h3>席状況</h3>`)
 
 	if 0 < r.ticketId && r.ticketId <= len(ticket) {
 		for i, v := range ticket[r.ticketId-1].variationIds {
-			m2.WriteString(fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId-1].variationNames[i], v))
+			ret.WriteString(fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId-1].variationNames[i], v))
 
 			for row := 0; row < 64; row++ {
-				m2.WriteString(`<tr>`)
+				ret.WriteString(`<tr>`)
 				for col := 0; col < 64; col++ {
 					if row*64+col < counter[v] {
-						m2.WriteString(fmt.Sprintf(`<td id="%02d-%02d" class="unavailable"></td>`, row, col))
+						ret.WriteString(fmt.Sprintf(`<td id="%02d-%02d" class="unavailable"></td>`, row, col))
 					} else {
-						m2.WriteString(fmt.Sprintf(`<td id="%02d-%02d" class="available"></td>`, row, col))
+						ret.WriteString(fmt.Sprintf(`<td id="%02d-%02d" class="available"></td>`, row, col))
 					}
 				}
-				m2.WriteString("</tr>")
+				ret.WriteString("</tr>")
 			}
-			m2.WriteString("</table>")
+			ret.WriteString("</table>")
 		}
 	}
-	return ret + m2.String()
+	return ret.String()
 }
 
 func GenSoldOutHTML(r *Render) string {
@@ -317,29 +301,29 @@ func GenSoldOutHTML(r *Render) string {
 }
 
 func GenHTML(content_name string, r *Render) string {
-	res := `<!DOCTYPE html> <html> <head>	<title>isucon 2</title>	<meta charset="utf-8">	<link type="text/css" rel="stylesheet" href="/css/ui-lightness/jquery-ui-1.8.24.custom.css">	<link type="text/css" rel="stylesheet" href="/css/isucon2.css">	<script type="text/javascript" src="/js/jquery-1.8.2.min.js"></script>	<type="text/javascript" src="/js/jquery-ui-1.8.24.custom.min.js"></script>	<script type="text/javascript" src="/js/isucon2.js"></script>	</head>	<body>	<header>	<a href="/">	<img src="/images/isucon_title.jpg">	</a>	</header>	<div id="sidebar">`
+	res := bytes.NewBuffer(make([]byte, 0, 114514))
+	res.WriteString(`<!DOCTYPE html> <html> <head>	<title>isucon 2</title>	<meta charset="utf-8">	<link type="text/css" rel="stylesheet" href="/css/ui-lightness/jquery-ui-1.8.24.custom.css">	<link type="text/css" rel="stylesheet" href="/css/isucon2.css">	<script type="text/javascript" src="/js/jquery-1.8.2.min.js"></script>	<type="text/javascript" src="/js/jquery-ui-1.8.24.custom.min.js"></script>	<script type="text/javascript" src="/js/isucon2.js"></script>	</head>	<body>	<header>	<a href="/">	<img src="/images/isucon_title.jpg">	</a>	</header>	<div id="sidebar">`)
 	if orderId > 0 {
-		res += `<table><tr><th colspan="2">最近購入されたチケット</th></tr>`
-		res += get_recent_sold()
-		res += `</table>`
+		res.WriteString(fmt.Sprintf(`<table><tr><th colspan="2">最近購入されたチケット</th></tr>%s</table>`,
+			get_recent_sold()))
 	}
-	res += `</div><div id="content">`
+	res.WriteString(`</div><div id="content">`)
 	switch content_name {
 	case adminHTML:
-		res += GenAdminHTML(r)
+		res.WriteString(GenAdminHTML(r))
 	case artistHTML:
-		res += GenArtistHTML(r)
+		res.WriteString(GenArtistHTML(r))
 	case completeHTML:
-		res += GenCompleteHTML(r)
+		res.WriteString(GenCompleteHTML(r))
 	case indexHTML:
-		res += GenIndexHTML(r)
+		res.WriteString(GenIndexHTML(r))
 	case soldOutHTML:
-		res += GenSoldOutHTML(r)
+		res.WriteString(GenSoldOutHTML(r))
 	case ticketHTML:
-		res += GenTicketHTML(r)
+		res.WriteString(GenTicketHTML(r))
 	}
-	res += `</div></body></html>`
-	return res
+	res.WriteString(`</div></body></html>`)
+	return res.String()
 }
 
 func main() {
