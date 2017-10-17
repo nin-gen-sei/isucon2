@@ -402,9 +402,5 @@ func main() {
 		return c.String(http.StatusOK, csv)
 	})
 
-	e.HTTPErrorHandler = func(err error, c echo.Context) {
-		fmt.Print("404: " + c.Path())
-	}
-
-	e.Logger.Fatal(e.Start(":5000"))
+	e.Start(":5000")
 }
