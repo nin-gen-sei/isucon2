@@ -127,7 +127,7 @@ func GenIndexHTML(r *Render) string {
 func GenTicketHTML(r *Render) string {
 	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId].artistName, ticket[r.ticketId].ticketName)
 
-	for _, v := range ticket[r.ticketId].variationIds {
+	for i, v := range ticket[r.ticketId].variationIds {
 
 		ret += fmt.Sprintf(`
 	  <li class="variation">
@@ -139,13 +139,13 @@ func GenTicketHTML(r *Render) string {
 	  <input type="submit" value="購入">
 	  </form>
 	  </li>
-	`, r.ticketId, v, ticket[r.ticketId].variationNames[v], v, 4096-counter[v])
+	`, r.ticketId, v, ticket[r.ticketId].variationNames[i], v, 4096-counter[v])
 
 	}
 	ret += `</ul><h3>席状況</h3>`
 
-	for _, v := range ticket[r.ticketId].variationIds {
-		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId].variationNames[v], v)
+	for i, v := range ticket[r.ticketId].variationIds {
+		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId].variationNames[i], v)
 
 		for row := 0; row < 64; row++ {
 			ret += `<tr>`
