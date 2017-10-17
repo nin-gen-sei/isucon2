@@ -1,11 +1,9 @@
 package main
 
 import (
-	"strconv"
-
 	"fmt"
 	"net/http"
-
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo"
@@ -71,6 +69,56 @@ func push(s string) {
 	recentId++
 }
 
+func initDB() {
+	orderId = 0
+
+	artist = []Artist{
+
+		Artist{artistName: "NHN48",
+			ticketNames: []string{"西武ドームライブ", "東京ドームライブ"},
+			ticketIds:   []int{1, 2},
+		},
+
+		Artist{artistName: "はだいろクローバーZ",
+			ticketNames: []string{"さいたまスーパーアリーナライブ", "横浜アリーナライブ", "西武ドームライブ"},
+			ticketIds:   []int{3, 4, 5},
+		},
+	}
+	ticket = []Ticket{
+
+		Ticket{artistName: "NHN48",
+			ticketName:     "西武ドームライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{1, 2},
+		},
+
+		Ticket{artistName: "NHN48",
+			ticketName:     "東京ドームライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{3, 4},
+		},
+
+		Ticket{artistName: "はだいろクローバーZ",
+			ticketName:     "さいたまスーパーアリーナライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{5, 6},
+		},
+
+		Ticket{artistName: "はだいろクローバーZ",
+			ticketName:     "横浜アリーナライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{7, 8},
+		},
+
+		Ticket{artistName: "はだいろクローバーZ",
+			ticketName:     "西武ドームライブ",
+			variationNames: []string{"アリーナ席", "スタンド席"},
+			variationIds:   []int{9, 10},
+		},
+	}
+
+}
+
 func get_recent_sold() string {
 	ret := ""
 	n := recentId - 10
@@ -134,23 +182,60 @@ func GenCompleteHTML(r *Render) string {
 
 func getArtistList() string {
 	ret := ""
-	for i := 0; i <= len(artist); i++ {
-		ret += fmt.Sprint(`<li><span class="artist_name">%s</span></li>`, artist[i].artistName)
+	for i := 0; i < len(artist); i++ {
+		ret += fmt.Sprintf(`<li><span class="artist_name">%s</span></li>`, artist[i].artistName)
 	}
 	return ret
 }
 
 func GenIndexHTML(r *Render) string {
 	artlist := getArtistList()
-	return fmt.Sprint(`<h1>TOP</h1><ul>%s</ul>`, artlist)
+	return fmt.Sprintf(`<h1>TOP</h1><ul>%s</ul>`, artlist)
+}
+
+func GenTicketHTML(r *Render) string {
+	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId].artistName, ticket[r.ticketId].ticketName)
+
+	for i, v := range ticket[r.ticketId].variationIds {
+
+		ret += fmt.Sprintf(`
+	  <li class="variation">
+	  <form method="POST" action="/buy">
+	  <input type="hidden" name="ticket_id" value="%d">
+	  <input type="hidden" name="variation_id" value="%d">
+	  <span class="variation_name">%s </span> 残り<span class="vacancy" id="vacancy_%d">%d</span>席
+	  <input type="text" name="member_id" value="">
+	  <input type="submit" value="購入">
+	  </form>
+	  </li>
+	`, r.ticketId, v, ticket[r.ticketId].variationNames[i], v, 4096-counter[v])
+
+	}
+	ret += `</ul><h3>席状況</h3>`
+
+	for i, v := range ticket[r.ticketId].variationIds {
+		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId].variationNames[i], v)
+
+		for row := 0; row < 64; row++ {
+			ret += `<tr>`
+			for col := 0; col < 64; col++ {
+				if row*64+col <= counter[v] {
+					ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
+				} else {
+					ret += fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col)
+				}
+			}
+			ret += "</tr>"
+		}
+		ret += "</table>"
+	}
+
+	return ret
 }
 
 func GenSoldOutHTML(r *Render) string {
 	return `<span class="result" data-result="failure">売り切れました。</span>`
-}
 
-func GenTicketHTML(r *Render) string {
-	return ""
 }
 
 func GenHTML(content_name string, r *Render) string {
@@ -180,6 +265,7 @@ func GenHTML(content_name string, r *Render) string {
 }
 
 func main() {
+	initDB()
 	e := echo.New()
 
 	e.GET("/", func(c echo.Context) error {
