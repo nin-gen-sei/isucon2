@@ -263,7 +263,7 @@ func GenIndexHTML(r *Render) string {
 func GenTicketHTML(r *Render) string {
 
 	ret := ""
-	if r.ticketId < len(ticket) {
+	if 0 < r.ticketId && r.ticketId <= len(ticket) {
 
 		ret = fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId-1].artistName, ticket[r.ticketId-1].ticketName)
 
@@ -286,7 +286,7 @@ func GenTicketHTML(r *Render) string {
 
 	ret += `</ul><h3>席状況</h3>`
 
-	if r.ticketId < len(ticket) {
+	if 0 < r.ticketId && r.ticketId <= len(ticket) {
 		for i, v := range ticket[r.ticketId-1].variationIds {
 			ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId-1].variationNames[i], v)
 
