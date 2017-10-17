@@ -190,10 +190,10 @@ func get_recent_sold() string {
 	if n < 0 {
 		n = 0
 	}
-	recent_sold := soldList[n:orderId]
-	for _, s := range recent_sold {
+
+	for i := orderId - 1; i >= n; i-- {
 		ret += "<tr><td class=\"recent_variation\">"
-		ret += s
+		ret += soldList[i]
 		ret += "</td>\n</tr>"
 	}
 	return ret
@@ -370,8 +370,8 @@ func main() {
 			variation[r.variationId-1].artistName, variation[r.variationId-1].ticketName, variation[r.variationId-1].variationName, r.seatId))
 
 		csv += fmt.Sprintf("%d,%s,%s,%d,%s\n",
-    orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("2006-01-02 15:04:05"))
-			//orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("%Y-%m-%d %X"))
+			orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("2006-01-02 15:04:05"))
+		//orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("%Y-%m-%d %X"))
 
 		mutex.Unlock()
 		return c.HTML(http.StatusOK, GenHTML(completeHTML, r))
