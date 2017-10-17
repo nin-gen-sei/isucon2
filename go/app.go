@@ -6,14 +6,41 @@ import (
 	"github.com/labstack/echo"
 )
 
+type Artist struct {
+	artistName  string
+	ticketNames []string
+	ticketIds   []int
+}
+
+type Ticket struct {
+	artistName     string
+	ticketName     string
+	variationNames []string
+	variationIds   []int
+}
+
 var (
-	counter   []uint32
+	counter   []int
 	soldList  []string
-	recentId  uint32
-	orderdId  uint32
+	recentId  int
+	orderdId  int
 	csv       string
 	emptySold bool
+
+	inArtistId int
+	inTicketId int
+
+	artist []Artist // artist[artist_id] = Artist
+	ticket []Ticket // ticket[ticket_id] = Ticket
 )
+
+func itoa(a int) string {
+	return strconv.Itoa(a)
+}
+func atoi(a string) int {
+	b, _ := strconv.Atoi(a)
+	return b
+}
 
 func get_recent_sold() string {
 	ret := ""
@@ -33,11 +60,38 @@ func get_recent_sold() string {
 }
 
 func GenAdminHTML() string {
-	return ""
+	ret := `
+	<ul>
+	<li>
+	<a href="/admin/order.csv">注文CSV</a>
+	</li>
+	<li>
+	<form method="POST">
+	<input type="submit" value="データ初期化" />
+	</form>
+	</li>
+	</ul>
+	`
+	return ret
 }
 
 func GenArtistHTML() string {
-	return ""
+	ret := `<h2>`
+	ret += artist[inArtistId].artistName
+	ret += `</h2>`
+	ret += `<ul>`
+	for i := 0; i < len(ticket); i++ {
+		ret += `<li class="ticket">`
+		ret += `<a href="/ticket/`
+		ret += itoa(artist[inArtistId].ticketIds[i])
+		ret += `">`
+		ret += artist[inArtistId].ticketNames[i]
+		ret += `</a>残り<span class="count">`
+		ret += itoa(counter[artist[inArtistId].ticketIds[i]])
+		ret += `</span>枚`
+	}
+	ret += `</li>`
+	return ret
 }
 
 func GenCompleteHTML() string {
@@ -101,8 +155,8 @@ func main() {
 	})
 
 	e.POST("/buy", func(c echo.Context) error {
-		variation_id, _ := strconv.Atoi(c.Param("artist_id"))
-		member_id, _ := strconv.Atoi(c.Param("member_id"))
+		variation_id := atoi(c.Param("artist_id"))
+		member_id := atoi(c.Param("member_id"))
 
 		// 更新処理
 
