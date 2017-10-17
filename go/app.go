@@ -261,11 +261,15 @@ func GenIndexHTML(r *Render) string {
 }
 
 func GenTicketHTML(r *Render) string {
-	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId-1].artistName, ticket[r.ticketId-1].ticketName)
 
-	for i, v := range ticket[r.ticketId-1].variationIds {
+	ret := ""
+	if r.ticketId < len(ticket) {
 
-		ret += fmt.Sprintf(`
+		ret = fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId-1].artistName, ticket[r.ticketId-1].ticketName)
+
+		for i, v := range ticket[r.ticketId-1].variationIds {
+
+			ret += fmt.Sprintf(`
 	  <li class="variation">
 	  <form method="POST" action="/buy">
 	  <input type="hidden" name="ticket_id" value="%d">
@@ -277,26 +281,29 @@ func GenTicketHTML(r *Render) string {
 	  </li>
 	`, r.ticketId, v, ticket[r.ticketId-1].variationNames[i], v, 4096-counter[v])
 
+		}
 	}
+
 	ret += `</ul><h3>席状況</h3>`
 
-	for i, v := range ticket[r.ticketId-1].variationIds {
-		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId-1].variationNames[i], v)
+	if r.ticketId < len(ticket) {
+		for i, v := range ticket[r.ticketId-1].variationIds {
+			ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId-1].variationNames[i], v)
 
-		for row := 0; row < 64; row++ {
-			ret += `<tr>`
-			for col := 0; col < 64; col++ {
-				if row*64+col < counter[v] {
-					ret += fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col)
-				} else {
-					ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
+			for row := 0; row < 64; row++ {
+				ret += `<tr>`
+				for col := 0; col < 64; col++ {
+					if row*64+col < counter[v] {
+						ret += fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col)
+					} else {
+						ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
+					}
 				}
+				ret += "</tr>"
 			}
-			ret += "</tr>"
+			ret += "</table>"
 		}
-		ret += "</table>"
 	}
-
 	return ret
 }
 
