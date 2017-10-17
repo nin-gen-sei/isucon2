@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo"
+	"fmt"
 )
 
 type Artist struct {
@@ -110,12 +111,21 @@ func GenCompleteHTML(r *Render) string {
 	return ret
 }
 
+func getArtistList() string {
+	ret := ""
+	for i := 0; i <= len(artist); i++ {
+		ret += fmt.Sprint(`<li><span class="artist_name">%s</span></li>`,artist[i].artistName)
+	}
+	return ret
+}
+
 func GenIndexHTML(r *Render) string {
-	return ""
+	artlist := getArtistList()
+	return fmt.Sprint(`<h1>TOP</h1><ul>%s</ul>`, artlist)
 }
 
 func GenSoldOutHTML(r *Render) string {
-	return ""
+	return `<span class="result" data-result="failure">売り切れました。</span>`
 }
 
 func GenTicketHTML(r *Render) string {
