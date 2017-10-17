@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"sync"
+
 	"github.com/labstack/echo"
 )
 
@@ -46,6 +48,8 @@ var (
 	artist    []Artist    // artist[artist_id] = Artist
 	ticket    []Ticket    // ticket[ticket_id] = Ticket
 	variation []Variation // variation[variation_id] = Variaion
+
+	mutex sync.Mutex
 )
 
 const (
@@ -348,6 +352,7 @@ func main() {
 			memberId:    atoi(c.Param("member_id")),
 		}
 
+		mutex.Lock()
 		orderId++
 		if counter[r.variationId] == 4096 {
 			return c.HTML(http.StatusOK, GenHTML(soldOutHTML, r))
@@ -365,8 +370,12 @@ func main() {
 		return c.HTML(http.StatusOK, GenHTML(completeHTML, r))
 	})
 
-	e.GET("admin", func(c echo.Context) error {
+	e.GET("/admin", func(c echo.Context) error {
 		return c.HTML(http.StatusOK, GenHTML(adminHTML, &Render{}))
+	})
+  
+	e.POST("/admin", func(c echo.Context) error {
+		return c.Redirect(http.StatusOK, "/admin")
 	})
 
 	e.GET("/admin/order.csv", func(c echo.Context) error {
