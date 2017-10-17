@@ -28,7 +28,7 @@ type Render struct {
 	artistId    int
 	ticketId    int
 	variationId int
-	memberId    int
+	memberId    string
 	seatId      string
 }
 
@@ -73,12 +73,18 @@ func push(s string) {
 	recentId++
 }
 
-func initDB() {
+func initilaize() {
 	orderId = 0
 	recentId = 0
+	for i := 0; i < len(variation); i++ {
+		counter[i] = 0
+	}
+}
 
-	counter = make([]int, 114514)
+func initDB() {
+	counter = make([]int, 114)
 	soldList = make([]string, 114514)
+	initilaize()
 
 	artist = []Artist{
 
@@ -180,11 +186,11 @@ func initDB() {
 
 func get_recent_sold() string {
 	ret := ""
-	n := orderId - 10
+	n := recentId - 10
 	if n < 0 {
 		n = 0
 	}
-	recent_sold := soldList[n:]
+	recent_sold := soldList[n:orderId]
 	for _, s := range recent_sold {
 		ret += "<tr><td class=\"recent_variation\">"
 		ret += s
@@ -218,11 +224,11 @@ func GenArtistHTML(r *Render) string {
 		id := artist[r.artistId-1].ticketIds[i]
 		ret += `<li class="ticket">`
 		ret += `<a href="/ticket/`
-		ret += itoa(id)
+		ret += itoa(id + 1)
 		ret += `">`
 		ret += artist[r.artistId-1].ticketNames[i]
 		ret += `</a>残り<span class="count">`
-		ret += itoa(4096*2 - (counter[id*2-1-1] + counter[id*2-1]))
+		ret += itoa(4096*2 - (counter[id*2-1] + counter[id*2]))
 		ret += `</span>枚`
 	}
 	ret += `</li>`
@@ -232,7 +238,7 @@ func GenArtistHTML(r *Render) string {
 func GenCompleteHTML(r *Render) string {
 	ret := `<h2>予約完了</h2>`
 	ret += `会員ID:<span class="member_id">`
-	ret += itoa(r.memberId)
+	ret += r.memberId
 	ret += `</span>で<span class="result" data-result="success">&quot;<span class="seat">`
 	ret += r.seatId
 	ret += `</span>&quot;の席を購入しました。</span>`
@@ -241,8 +247,8 @@ func GenCompleteHTML(r *Render) string {
 
 func getArtistList() string {
 	ret := ""
-	for i := 0; i < len(artist); i++ {
-		ret += fmt.Sprintf(`<li><span class="artist_name">%s</span></li>`, artist[i].artistName)
+	for i, art := range artist {
+		ret += fmt.Sprintf(`<li><a href="/artist/%d"><span class="artist_name">%s</span></a></li>`, i+1, art.artistName)
 	}
 	return ret
 }
@@ -278,10 +284,10 @@ func GenTicketHTML(r *Render) string {
 		for row := 0; row < 64; row++ {
 			ret += `<tr>`
 			for col := 0; col < 64; col++ {
-				if row*64+col <= counter[v] {
-					ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
-				} else {
+				if row*64+col < counter[v] {
 					ret += fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col)
+				} else {
+					ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
 				}
 			}
 			ret += "</tr>"
@@ -348,8 +354,8 @@ func main() {
 
 	e.POST("/buy", func(c echo.Context) error {
 		r := &Render{
-			variationId: atoi(c.Param("variation_id")),
-			memberId:    atoi(c.Param("member_id")),
+			variationId: atoi(c.FormValue("variation_id")),
+			memberId:    c.FormValue("member_id"),
 		}
 
 		mutex.Lock()
@@ -357,14 +363,15 @@ func main() {
 		if counter[r.variationId] == 4096 {
 			return c.HTML(http.StatusOK, GenHTML(soldOutHTML, r))
 		}
-		counter[r.variationId]++
 		ctr := counter[r.variationId]
+		counter[r.variationId]++
 		r.seatId = fmt.Sprintf("%02d-%02d", ctr/64, ctr%64)
 		push(fmt.Sprintf("%s %s %s</td>\n<td class=\"recent_seat_id\">%s",
-			variation[r.variationId].artistName, variation[r.variationId].ticketName, variation[r.variationId].variationName, r.seatId))
+			variation[r.variationId-1].artistName, variation[r.variationId-1].ticketName, variation[r.variationId-1].variationName, r.seatId))
 
-		csv += fmt.Sprintf("%d,%s,%s,%s\n",
-			orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("%Y-%m-%d %X"))
+		csv += fmt.Sprintf("%d,%s,%s,%d,%s\n",
+    orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("2006-01-02 15:04:05"))
+			//orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("%Y-%m-%d %X"))
 
 		mutex.Unlock()
 		return c.HTML(http.StatusOK, GenHTML(completeHTML, r))
@@ -375,12 +382,17 @@ func main() {
 	})
 
 	e.POST("/admin", func(c echo.Context) error {
-		return c.Redirect(http.StatusOK, "/admin")
+		initilaize()
+		return c.Redirect(302, "/admin")
 	})
 
 	e.GET("/admin/order.csv", func(c echo.Context) error {
 		return c.String(http.StatusOK, csv)
 	})
+
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		fmt.Print("404: " + c.Path())
+	}
 
 	e.Logger.Fatal(e.Start(":5000"))
 }
