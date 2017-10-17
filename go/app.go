@@ -224,7 +224,7 @@ func GenArtistHTML(r *Render) string {
 		id := artist[r.artistId-1].ticketIds[i]
 		ret += `<li class="ticket">`
 		ret += `<a href="/ticket/`
-		ret += itoa(id + 1)
+		ret += itoa(id)
 		ret += `">`
 		ret += artist[r.artistId-1].ticketNames[i]
 		ret += `</a>残り<span class="count">`
