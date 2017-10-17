@@ -3,8 +3,8 @@ package main
 import (
 	"strconv"
 	"net/http"
-	"github.com/labstack/echo"
 	"fmt"
+	"github.com/labstack/echo"
 )
 
 type Artist struct {
@@ -175,12 +175,49 @@ func GenIndexHTML(r *Render) string {
 	return fmt.Sprintf(`<h1>TOP</h1><ul>%s</ul>`, artlist)
 }
 
-func GenSoldOutHTML(r *Render) string {
-	return `<span class="result" data-result="failure">売り切れました。</span>`
+func GenTicketHTML(r *Render) string {
+	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId].artistName, ticket[r.ticketId].ticketName)
+
+	for i, v := range ticket[r.ticketId].variationIds {
+
+		ret += fmt.Sprintf(`
+	  <li class="variation">
+	  <form method="POST" action="/buy">
+	  <input type="hidden" name="ticket_id" value="%d">
+	  <input type="hidden" name="variation_id" value="%d">
+	  <span class="variation_name">%s </span> 残り<span class="vacancy" id="vacancy_%d">%d</span>席
+	  <input type="text" name="member_id" value="">
+	  <input type="submit" value="購入">
+	  </form>
+	  </li>
+	`, r.ticketId, v, ticket[r.ticketId].variationNames[i], v, 4096-counter[v])
+
+	}
+	ret += `</ul><h3>席状況</h3>`
+
+	for i, v := range ticket[r.ticketId].variationIds {
+		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId].variationNames[i], v)
+
+		for row := 0; row < 64; row++ {
+			ret += `<tr>`
+			for col := 0; col < 64; col++ {
+				if row*64+col <= counter[v] {
+					ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
+				} else {
+					ret += fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col)
+				}
+			}
+			ret += "</tr>"
+		}
+		ret += "</table>"
+	}
+
+	return ret
 }
 
-func GenTicketHTML(r *Render) string {
-	return ""
+func GenSoldOutHTML(r *Render) string {
+	return `<span class="result" data-result="failure">売り切れました。</span>`
+
 }
 
 func GenHTML(content_name string, r *Render) string {
