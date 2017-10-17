@@ -218,7 +218,7 @@ func GenArtistHTML(r *Render) string {
 		id := artist[r.artistId-1].ticketIds[i]
 		ret += `<li class="ticket">`
 		ret += `<a href="/ticket/`
-		ret += itoa(id)
+		ret += itoa(id + 1)
 		ret += `">`
 		ret += artist[r.artistId-1].ticketNames[i]
 		ret += `</a>残り<span class="count">`
@@ -241,8 +241,8 @@ func GenCompleteHTML(r *Render) string {
 
 func getArtistList() string {
 	ret := ""
-	for i := 0; i < len(artist); i++ {
-		ret += fmt.Sprintf(`<li><span class="artist_name">%s</span></li>`, artist[i].artistName)
+	for i, art := range artist {
+		ret += fmt.Sprintf(`<li><a href="/artist/%d"><span class="artist_name">%s</span></a></li>`, i+1, art.artistName)
 	}
 	return ret
 }
@@ -279,9 +279,9 @@ func GenTicketHTML(r *Render) string {
 			ret += `<tr>`
 			for col := 0; col < 64; col++ {
 				if row*64+col <= counter[v] {
-					ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
-				} else {
 					ret += fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col)
+				} else {
+					ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
 				}
 			}
 			ret += "</tr>"
@@ -375,12 +375,16 @@ func main() {
 	})
 
 	e.POST("/admin", func(c echo.Context) error {
-		return c.Redirect(http.StatusOK, "/admin")
+		return c.Redirect(302, "/admin")
 	})
 
 	e.GET("/admin/order.csv", func(c echo.Context) error {
 		return c.String(http.StatusOK, csv)
 	})
+
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		fmt.Print("404: " + c.Path())
+	}
 
 	e.Logger.Fatal(e.Start(":5000"))
 }
