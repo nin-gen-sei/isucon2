@@ -211,18 +211,18 @@ func GenAdminHTML(r *Render) string {
 
 func GenArtistHTML(r *Render) string {
 	ret := `<h2>`
-	ret += artist[r.artistId].artistName
+	ret += artist[r.artistId-1].artistName
 	ret += `</h2>`
 	ret += `<ul>`
-	for i := 0; i < len(ticket); i++ {
-		id := artist[r.artistId].ticketIds[i]
+	for i := 0; i < len(artist[r.artistId-1].ticketIds); i++ {
+		id := artist[r.artistId-1].ticketIds[i]
 		ret += `<li class="ticket">`
 		ret += `<a href="/ticket/`
 		ret += itoa(id)
 		ret += `">`
-		ret += artist[r.artistId].ticketNames[i]
+		ret += artist[r.artistId-1].ticketNames[i]
 		ret += `</a>残り<span class="count">`
-		ret += itoa(4096*2 - (counter[id*2-1] + counter[id*2]))
+		ret += itoa(4096*2 - (counter[id*2-1-1] + counter[id*2-1]))
 		ret += `</span>枚`
 	}
 	ret += `</li>`
@@ -253,9 +253,9 @@ func GenIndexHTML(r *Render) string {
 }
 
 func GenTicketHTML(r *Render) string {
-	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId].artistName, ticket[r.ticketId].ticketName)
+	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[r.ticketId-1].artistName, ticket[r.ticketId-1].ticketName)
 
-	for i, v := range ticket[r.ticketId].variationIds {
+	for i, v := range ticket[r.ticketId-1].variationIds {
 
 		ret += fmt.Sprintf(`
 	  <li class="variation">
@@ -267,13 +267,13 @@ func GenTicketHTML(r *Render) string {
 	  <input type="submit" value="購入">
 	  </form>
 	  </li>
-	`, r.ticketId, v, ticket[r.ticketId].variationNames[i], v, 4096-counter[v])
+	`, r.ticketId, v, ticket[r.ticketId-1].variationNames[i], v, 4096-counter[v])
 
 	}
 	ret += `</ul><h3>席状況</h3>`
 
-	for i, v := range ticket[r.ticketId].variationIds {
-		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId].variationNames[i], v)
+	for i, v := range ticket[r.ticketId-1].variationIds {
+		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId-1].variationNames[i], v)
 
 		for row := 0; row < 64; row++ {
 			ret += `<tr>`
@@ -329,21 +329,21 @@ func main() {
 
 	e.GET("/", func(c echo.Context) error {
 		r := &Render{}
-		return c.String(http.StatusOK, GenHTML(indexHTML, r))
+		return c.HTML(http.StatusOK, GenHTML(indexHTML, r))
 	})
 
-	e.GET("/artist/<:artist_id>", func(c echo.Context) error {
+	e.GET("/artist/:artist_id", func(c echo.Context) error {
 		r := &Render{
 			artistId: atoi(c.Param("artist_id")),
 		}
-		return c.String(http.StatusOK, GenHTML(artistHTML, r))
+		return c.HTML(http.StatusOK, GenHTML(artistHTML, r))
 	})
 
-	e.GET("/ticket/<:ticket_id>", func(c echo.Context) error {
+	e.GET("/ticket/:ticket_id", func(c echo.Context) error {
 		r := &Render{
 			ticketId: atoi(c.Param("ticket_id")),
 		}
-		return c.String(http.StatusOK, GenHTML(ticketHTML, r))
+		return c.HTML(http.StatusOK, GenHTML(ticketHTML, r))
 	})
 
 	e.POST("/buy", func(c echo.Context) error {
@@ -355,27 +355,25 @@ func main() {
 		mutex.Lock()
 		orderId++
 		if counter[r.variationId] == 4096 {
-			mutex.Unlock()
-			return c.String(http.StatusOK, GenHTML(soldOutHTML, r))
+			return c.HTML(http.StatusOK, GenHTML(soldOutHTML, r))
 		}
 		counter[r.variationId]++
 		ctr := counter[r.variationId]
-
-		r.seatId = fmt.Sprint("%02d-%02d", ctr/64, ctr%64)
-
-		push(fmt.Sprint("%s %s %s</td>\n<td class=\"recent_seat_id\">%s",
+		r.seatId = fmt.Sprintf("%02d-%02d", ctr/64, ctr%64)
+		push(fmt.Sprintf("%s %s %s</td>\n<td class=\"recent_seat_id\">%s",
 			variation[r.variationId].artistName, variation[r.variationId].ticketName, variation[r.variationId].variationName, r.seatId))
 
-		csv += fmt.Sprint("%d,%s,%s,%s\n",
+		csv += fmt.Sprintf("%d,%s,%s,%s\n",
 			orderId, r.memberId, r.seatId, r.variationId, time.Now().Format("%Y-%m-%d %X"))
 
 		mutex.Unlock()
-		return c.String(http.StatusOK, GenHTML(completeHTML, r))
+		return c.HTML(http.StatusOK, GenHTML(completeHTML, r))
 	})
 
 	e.GET("/admin", func(c echo.Context) error {
-		return c.String(http.StatusOK, GenHTML(adminHTML, &Render{}))
+		return c.HTML(http.StatusOK, GenHTML(adminHTML, &Render{}))
 	})
+
 	e.POST("/admin", func(c echo.Context) error {
 		return c.Redirect(http.StatusOK, "/admin")
 	})
