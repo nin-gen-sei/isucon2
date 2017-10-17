@@ -81,7 +81,7 @@ func initilaize() {
 	for i := 0; i <= len(variation); i++ {
 		counter[i] = 0
 	}
-	csv = bytes.NewBuffer(make([]byte, 0, 114514))
+	csv = bytes.NewBuffer(make([]byte, 0, 7114514))
 	mutex.Unlock()
 }
 
@@ -358,6 +358,7 @@ func main() {
 		mutex.Lock()
 		orderId++
 		if counter[r.variationId] == 4096 {
+			mutex.Unlock()
 			return c.HTML(http.StatusOK, GenHTML(soldOutHTML, r))
 		}
 		ctr := counter[r.variationId]
