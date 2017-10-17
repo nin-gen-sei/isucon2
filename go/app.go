@@ -284,7 +284,7 @@ func GenTicketHTML(r *Render) string {
 		for row := 0; row < 64; row++ {
 			ret += `<tr>`
 			for col := 0; col < 64; col++ {
-				if row*64+col <= counter[v] {
+				if row*64+col < counter[v] {
 					ret += fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col)
 				} else {
 					ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
