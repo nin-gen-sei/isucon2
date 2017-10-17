@@ -297,9 +297,9 @@ func GenTicketHTML(r *Render) string {
 				m2.WriteString(`<tr>`)
 				for col := 0; col < 64; col++ {
 					if row*64+col < counter[v] {
-						m2.WriteString(fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col))
+						m2.WriteString(fmt.Sprintf(`<td id="%02d-%02d" class="unavailable"></td>`, row, col))
 					} else {
-						m2.WriteString(fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col))
+						m2.WriteString(fmt.Sprintf(`<td id="%02d-%02d" class="available"></td>`, row, col))
 					}
 				}
 				m2.WriteString("</tr>")
