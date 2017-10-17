@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/labstack/echo"
@@ -107,7 +108,43 @@ func GenSoldOutHTML() string {
 }
 
 func GenTicketHTML() string {
-	return ""
+	ret := fmt.Sprintf(`<h2> %s : %s </h2> <ul> `, ticket[inTicketId].artistName, ticket[inTicketId].ticketName)
+
+	for _, v := range ticket[inTicketId].variationIds {
+
+		ret += fmt.Sprintf(`
+	  <li class="variation">
+	  <form method="POST" action="/buy">
+	  <input type="hidden" name="ticket_id" value="%d">
+	  <input type="hidden" name="variation_id" value="%d">
+	  <span class="variation_name">%s </span> 残り<span class="vacancy" id="vacancy_%d">%d</span>席
+	  <input type="text" name="member_id" value="">
+	  <input type="submit" value="購入">
+	  </form>
+	  </li>
+	`, inTicketId, v, ticket[inTicketId].variationNames[v], v, 4096-counter[v])
+
+	}
+	ret += `</ul><h3>席状況</h3>`
+
+	for _, v := range ticket[inTicketId].variationIds {
+		ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[inTicketId].variationNames[v], v)
+
+		for row := 0; row < 64; row++ {
+			ret += `<tr>`
+			for col := 0; col < 64; col++ {
+				if row*64+col <= counter[v] {
+					ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
+				} else {
+					ret += fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col)
+				}
+			}
+			ret += "</tr>"
+		}
+		ret += "</table>"
+	}
+
+	return ret
 }
 
 func GenHTML(content_name string) string {
