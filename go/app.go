@@ -275,7 +275,7 @@ func GenTicketHTML(r *Render) string {
 	  <form method="POST" action="/buy">
 	  <input type="hidden" name="ticket_id" value="%d">
 	  <input type="hidden" name="variation_id" value="%d">
-	  <span class="variation_name">%s </span> 残り<span class="vacancy" id="vacancy_%d">%d</span>席
+	  <span class="variation_name">%s</span> 残り<span class="vacancy" id="vacancy_%d">%d</span>席
 	  <input type="text" name="member_id" value="">
 	  <input type="submit" value="購入">
 	  </form>
