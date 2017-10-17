@@ -73,8 +73,9 @@ def close_db_connection(exception):
 
 @app.route("/")
 def top_page():
+    # 固定ページ化できる
     cur = get_db().cursor()
-    cur.execute('SELECT * FROM artist')
+    cur.execute('SELECT * FROM artist') # 固定値，実際は不要
     artists = cur.fetchall()
     cur.close()
     recent_sold = get_recent_sold()
@@ -84,13 +85,17 @@ def top_page():
 def artist_page(artist_id):
     cur = get_db().cursor()
 
+    # artist_id から アーティスト名
     cur.execute('SELECT id, name FROM artist WHERE id = %s LIMIT 1', (artist_id, ))
     artist = cur.fetchone()
 
+    # artist_id から チケット名
     cur.execute('SELECT id, name FROM ticket WHERE artist_id = %s', (artist_id, ))
     tickets = cur.fetchall()
 
     for ticket in tickets:
+        # あるチケットのバリエーション毎に残数を求める
+        # ticket_id から バリエーション残数
         cur.execute(
             '''SELECT COUNT(*) AS cnt FROM variation
                 INNER JOIN stock ON stock.variation_id = variation.id
@@ -112,19 +117,25 @@ def artist_page(artist_id):
 def ticket_page(ticket_id):
     cur = get_db().cursor()
     
+    # ticket_id から アーティスト名，チケット名
     cur.execute(
         'SELECT t.*, a.name AS artist_name FROM ticket t INNER JOIN artist a ON t.artist_id = a.id WHERE t.id = %s LIMIT 1',
         (ticket_id, )
     )
     ticket = cur.fetchone()
 
+    # チケットを得てバリデーションを返す
+    # ticket_id から バリエーション 情報(id, name)
     cur.execute(
         'SELECT id, name FROM variation WHERE ticket_id = %s',
         (ticket_id, )
     )
+
+    # ある ticket_id に存在する全てのバリエーション
     variations = cur.fetchall()
 
     for variation in variations:
+        # ticket_id (から解決できる variation_id) から seat_id, order_id
         cur.execute(
             'SELECT seat_id, order_id FROM stock WHERE variation_id = %s',
             (variation['id'], )
@@ -134,6 +145,7 @@ def ticket_page(ticket_id):
         for row in stocks:
             variation['stock'][row['seat_id']] = row['order_id']
 
+        # ある variation_id の 残数
         cur.execute(
             'SELECT COUNT(*) AS cunt FROM stock WHERE variation_id = %s AND order_id IS NULL',
             (variation['id'],)
@@ -186,6 +198,9 @@ def admin_page():
 @app.route("/admin/order.csv")
 def admin_csv():
     cur = get_db().cursor()
+    # CSVレポートを生成する
+    # order_request の照準
+    # stock.order_id は 非生成値
     cur.execute('''SELECT order_request.*, stock.seat_id, stock.variation_id, stock.updated_at
          FROM order_request JOIN stock ON order_request.id = stock.order_id
          ORDER BY order_request.id ASC''')

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -286,25 +287,27 @@ func GenTicketHTML(r *Render) string {
 
 	ret += `</ul><h3>席状況</h3>`
 
+	var m2 = bytes.NewBuffer(make([]byte, 0, 114514))
+
 	if 0 < r.ticketId && r.ticketId <= len(ticket) {
 		for i, v := range ticket[r.ticketId-1].variationIds {
-			ret += fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId-1].variationNames[i], v)
+			m2.WriteString(fmt.Sprintf(` <h4>%s</h4> <table class="seats" data-variationid="%d"> `, ticket[r.ticketId-1].variationNames[i], v))
 
 			for row := 0; row < 64; row++ {
-				ret += `<tr>`
+				m2.WriteString(`<tr>`)
 				for col := 0; col < 64; col++ {
 					if row*64+col < counter[v] {
-						ret += fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col)
+						m2.WriteString(fmt.Sprintf(`<td id="%2d-%2d" class="unavailable"></td>`, row, col))
 					} else {
-						ret += fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col)
+						m2.WriteString(fmt.Sprintf(`<td id="%2d-%2d" class="available"></td>`, row, col))
 					}
 				}
-				ret += "</tr>"
+				m2.WriteString("</tr>")
 			}
-			ret += "</table>"
+			m2.WriteString("</table>")
 		}
 	}
-	return ret
+	return ret + m2.String()
 }
 
 func GenSoldOutHTML(r *Render) string {
