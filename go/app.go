@@ -374,11 +374,11 @@ func main() {
 		return c.String(http.StatusOK, GenHTML(completeHTML, r))
 	})
 
-	e.GET("admin", func(c echo.Context) error {
+	e.GET("/admin", func(c echo.Context) error {
 		return c.String(http.StatusOK, GenHTML(adminHTML, &Render{}))
 	})
-	e.POST("admin", func(c echo.Context) error {
-		return c.Redirect(http.StatusOK, "admin")
+	e.POST("/admin", func(c echo.Context) error {
+		return c.Redirect(http.StatusOK, "/admin")
 	})
 
 	e.GET("/admin/order.csv", func(c echo.Context) error {
