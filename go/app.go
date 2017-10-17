@@ -77,7 +77,7 @@ func initilaize() {
 	mutex.Lock()
 	orderId = 0
 	recentId = 0
-	for i := 0; i < len(variation); i++ {
+	for i := 0; i <= len(variation); i++ {
 		counter[i] = 0
 	}
 	mutex.Unlock()
