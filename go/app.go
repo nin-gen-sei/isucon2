@@ -19,6 +19,14 @@ type Ticket struct {
 	variationIds   []int
 }
 
+type Render struct {
+	artistId    int
+	ticketId    int
+	variationId int
+	memberId    int
+	seatId      int
+}
+
 var (
 	counter   []int
 	soldList  []string
@@ -27,11 +35,9 @@ var (
 	csv       string
 	emptySold bool
 
-	inArtistId int
-	inTicketId int
-
 	artist []Artist // artist[artist_id] = Artist
 	ticket []Ticket // ticket[ticket_id] = Ticket
+
 )
 
 func itoa(a int) string {
@@ -59,7 +65,7 @@ func get_recent_sold() string {
 	return ret
 }
 
-func GenAdminHTML() string {
+func GenAdminHTML(r *Render) string {
 	ret := `
 	<ul>
 	<li>
@@ -75,38 +81,44 @@ func GenAdminHTML() string {
 	return ret
 }
 
-func GenArtistHTML() string {
+func GenArtistHTML(r *Render) string {
 	ret := `<h2>`
-	ret += artist[inArtistId].artistName
+	ret += artist[r.artistId].artistName
 	ret += `</h2>`
 	ret += `<ul>`
 	for i := 0; i < len(ticket); i++ {
 		ret += `<li class="ticket">`
 		ret += `<a href="/ticket/`
-		ret += itoa(artist[inArtistId].ticketIds[i])
+		ret += itoa(artist[r.artistId].ticketIds[i])
 		ret += `">`
-		ret += artist[inArtistId].ticketNames[i]
+		ret += artist[r.artistId].ticketNames[i]
 		ret += `</a>残り<span class="count">`
-		ret += itoa(counter[artist[inArtistId].ticketIds[i]])
+		ret += itoa(counter[artist[r.artistId].ticketIds[i]])
 		ret += `</span>枚`
 	}
 	ret += `</li>`
 	return ret
 }
 
-func GenCompleteHTML() string {
+func GenCompleteHTML(r *Render) string {
+	ret := `<h2>予約完了</h2>`
+	ret += `会員ID:<span class="member_id">`
+	ret += itoa(r.memberId)
+	ret += `</span>で<span class="result" data-result="success">&quot;<span class="seat">`
+	ret += itoa(r.seatId)
+	ret += `</span>&quot;の席を購入しました。</span>`
+	return ret
+}
+
+func GenIndexHTML(r *Render) string {
 	return ""
 }
 
-func GenIndexHTML() string {
+func GenSoldOutHTML(r *Render) string {
 	return ""
 }
 
-func GenSoldOutHTML() string {
-	return ""
-}
-
-func GenTicketHTML() string {
+func GenTicketHTML(r *Render) string {
 	return ""
 }
 
@@ -155,8 +167,9 @@ func main() {
 	})
 
 	e.POST("/buy", func(c echo.Context) error {
-		variation_id := atoi(c.Param("artist_id"))
-		member_id := atoi(c.Param("member_id"))
+		r := Render{}
+		r.variationId = atoi(c.Param("artist_id"))
+		r.memberId = atoi(c.Param("member_id"))
 
 		// 更新処理
 
